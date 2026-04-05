@@ -17,12 +17,29 @@ Early public release.
 
 ## Getting Started
 
-Public installation and usage instructions will be expanded here as the public shell is promoted.
+This public branch currently exposes a docs-first shell of the project.
+
+Start here:
+
+1. Read the [architecture guide](docs/architecture.md).
+2. Review the [CLI overview](docs/cli.md).
+3. Run the public verification command:
+
+```bash
+./scripts/verify-public.sh
+```
 
 ## Verification
 
-Public verification instructions will be added here as the public shell gains its first stable release surface.
+The canonical verification command for the current public shell is:
+
+```bash
+./scripts/verify-public.sh
+```
+
+It validates the required public-facing files and checks for obvious
+private-surface leakage in the public branch.
 
 ## Architecture
 
-Architecture documentation will be published alongside the public shell as it is promoted.
+See [docs/architecture.md](docs/architecture.md).
