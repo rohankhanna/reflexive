@@ -10,14 +10,14 @@ project.
 The shipped public surface currently has three parts:
 
 - an installable Python package
-- a read-only CLI entrypoint with release metadata, filesystem inspection, and operator guidance
+- a read-only CLI entrypoint with release metadata, filesystem inspection, operator guidance, and path comparison
 - public-facing docs that describe the intended operator-safety model
 
 ```mermaid
 flowchart TD
     PKG[Python package] --> CLI[reflexive CLI]
     CLI --> STATUS[status and version]
-    CLI --> CORTEX[read-only cortex inspect check and doctor]
+    CLI --> CORTEX[read-only cortex inspect check doctor and compare]
     PKG --> DOCS[Public docs]
     DOCS --> DOMAINS[Current and future operator domains]
 ```
@@ -27,7 +27,7 @@ flowchart TD
 The current public release exposes:
 
 - release metadata commands
-- read-only `cortex` inspection, risk-check, and recommendation commands for explicit paths
+- read-only `cortex` inspection, risk-check, recommendation, and comparison commands for explicit paths
 
 ## Deferred operator domains
 

@@ -27,6 +27,10 @@ The current public release exposes a small read-only CLI surface.
   and check data.
 - `reflexive cortex doctor <path> --json`
   Emits the same recommendation payload in machine-readable form.
+- `reflexive cortex compare <left> <right>`
+  Compares two local tool-state directories at the same read-only summary level.
+- `reflexive cortex compare <left> <right> --json`
+  Emits the same comparison payload in machine-readable form.
 
 ## Not yet public
 

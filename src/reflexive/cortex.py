@@ -405,3 +405,43 @@ def doctor_path(raw_path: str) -> dict[str, Any]:
         "inspection": inspection,
         "recommendations": recommendations,
     }
+
+
+def compare_paths(left_raw_path: str, right_raw_path: str) -> dict[str, Any]:
+    left = inspect_path(left_raw_path)
+    right = inspect_path(right_raw_path)
+
+    differences: list[dict[str, Any]] = []
+    for key in (
+        "exists",
+        "file_count",
+        "directory_count",
+        "symlink_count",
+        "sqlite_main_count",
+        "sqlite_sidecar_count",
+        "sqlite_holder_count",
+        "unsafe_live_state_count",
+    ):
+        if left[key] != right[key]:
+            differences.append({"field": key, "left": left[key], "right": right[key]})
+
+    status = "ok" if not differences else "warn"
+    recommendations: list[str] = []
+    if not left["exists"] or not right["exists"]:
+        recommendations.append("Both paths should exist before you rely on a comparison for recovery or migration.")
+    if left["sqlite_holder_count"] or right["sqlite_holder_count"]:
+        recommendations.append(
+            "At least one path has live SQLite holders. Stop the owning tool before trusting this comparison for copying or repair."
+        )
+    if differences:
+        recommendations.append("Review the differing counts before assuming the two state directories are interchangeable.")
+    else:
+        recommendations.append("The compared filesystem-level state looks equivalent at the current summary level.")
+
+    return {
+        "status": status,
+        "left": left,
+        "right": right,
+        "differences": differences,
+        "recommendations": recommendations,
+    }

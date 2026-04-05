@@ -25,6 +25,7 @@ class ReflexiveCliTest(unittest.TestCase):
         self.assertIn("cortex inspect", payload["available_commands"])
         self.assertIn("cortex check", payload["available_commands"])
         self.assertIn("cortex doctor", payload["available_commands"])
+        self.assertIn("cortex compare", payload["available_commands"])
 
     def test_cortex_inspect_reports_missing_path(self) -> None:
         missing = "/tmp/reflexive-public-missing-path"
@@ -61,6 +62,19 @@ class ReflexiveCliTest(unittest.TestCase):
             self.assertEqual(exit_code, 0)
             self.assertEqual(payload["status"], "ok")
             self.assertTrue(payload["recommendations"])
+
+    def test_cortex_compare_reports_difference(self) -> None:
+        with tempfile.TemporaryDirectory() as left_dir, tempfile.TemporaryDirectory() as right_dir:
+            left = Path(left_dir)
+            right = Path(right_dir)
+            (left / "state.sqlite").write_text("placeholder", encoding="utf-8")
+
+            exit_code, output = self._run(["cortex", "compare", str(left), str(right), "--json"])
+            payload = json.loads(output)
+
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(payload["status"], "warn")
+            self.assertTrue(payload["differences"])
 
 
 if __name__ == "__main__":

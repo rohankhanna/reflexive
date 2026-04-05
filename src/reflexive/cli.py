@@ -4,7 +4,7 @@ import argparse
 import json
 
 from reflexive import __version__
-from reflexive.cortex import check_path, doctor_path, inspect_path
+from reflexive.cortex import check_path, compare_paths, doctor_path, inspect_path
 
 
 def _status_payload() -> dict[str, object]:
@@ -13,7 +13,14 @@ def _status_payload() -> dict[str, object]:
         "version": __version__,
         "release_surface": "public-shell",
         "status": "early-public-release",
-        "available_commands": ["status", "version", "cortex inspect", "cortex check", "cortex doctor"],
+        "available_commands": [
+            "status",
+            "version",
+            "cortex inspect",
+            "cortex check",
+            "cortex doctor",
+            "cortex compare",
+        ],
         "documented_domains": ["cortex"],
         "notes": [
             "This public release exposes read-only inspection commands for local tool-state directories.",
@@ -68,6 +75,14 @@ def _build_parser() -> argparse.ArgumentParser:
     cortex_doctor_parser.add_argument("path", help="Path to inspect.")
     cortex_doctor_parser.add_argument("--json", action="store_true", help="Emit JSON output.")
 
+    cortex_compare_parser = cortex_subparsers.add_parser(
+        "compare",
+        help="Compare two tool-state directories without modifying either one.",
+    )
+    cortex_compare_parser.add_argument("left_path", help="First path to inspect.")
+    cortex_compare_parser.add_argument("right_path", help="Second path to inspect.")
+    cortex_compare_parser.add_argument("--json", action="store_true", help="Emit JSON output.")
+
     return parser
 
 
@@ -109,6 +124,9 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.cortex_command == "doctor":
             _emit(doctor_path(args.path), args.json)
+            return 0
+        if args.cortex_command == "compare":
+            _emit(compare_paths(args.left_path, args.right_path), args.json)
             return 0
         parser.parse_args(["cortex", "--help"])
         return 0
