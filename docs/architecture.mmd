@@ -1,7 +1,7 @@
 flowchart TD
     CLI[reflexive CLI] --> STATUS[Status and version]
     CLI --> PATHS[App-owned paths and purge]
-    CLI --> SNAP[App-owned explicit-path snapshots]
+    CLI --> SNAP[App-owned explicit-path snapshots verify and diff]
     CLI --> INSPECT[Read-only cortex inspect check doctor and compare]
     CLI --> DOCS[Public docs]
     DOCS --> FUTURE[Deferred snapshot doctor scratch scaffold domains]

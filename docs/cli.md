@@ -47,6 +47,10 @@ The current public release exposes a small read-only CLI surface.
   Lists snapshots stored for an explicit path.
 - `reflexive cortex snapshot latest <path>`
   Shows the latest snapshot stored for an explicit path.
+- `reflexive cortex snapshot verify <path> [snapshot_ref]`
+  Verifies an explicit path against a stored snapshot, defaulting to `latest`.
+- `reflexive cortex snapshot diff <path> [snapshot_ref]`
+  Shows differences between an explicit path and a stored snapshot, defaulting to `latest`.
 
 ## Not yet public
 

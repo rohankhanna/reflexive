@@ -31,6 +31,8 @@ class ReflexiveCliTest(unittest.TestCase):
         self.assertIn("cortex snapshot create", payload["available_commands"])
         self.assertIn("cortex snapshot list", payload["available_commands"])
         self.assertIn("cortex snapshot latest", payload["available_commands"])
+        self.assertIn("cortex snapshot verify", payload["available_commands"])
+        self.assertIn("cortex snapshot diff", payload["available_commands"])
 
     def test_paths_json_uses_xdg_environment(self) -> None:
         env = {
@@ -91,6 +93,35 @@ class ReflexiveCliTest(unittest.TestCase):
             self.assertEqual(latest_code, 0)
             self.assertEqual(list_payload["snapshot_count"], 1)
             self.assertEqual(latest_payload["snapshot"]["id"], create_payload["snapshot"]["id"])
+
+    def test_snapshot_verify_and_diff_warn_after_change(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            base = Path(temp_dir)
+            source = base / "source"
+            source.mkdir()
+            file_path = source / "file.txt"
+            file_path.write_text("before", encoding="utf-8")
+            env = {"XDG_STATE_HOME": str(base / "state")}
+
+            with patch.dict("os.environ", env, clear=False):
+                self._run(["cortex", "snapshot", "create", str(source), "--json"])
+                file_path.write_text("after", encoding="utf-8")
+                verify_code, verify_output = self._run(
+                    ["cortex", "snapshot", "verify", str(source), "--json"]
+                )
+                diff_code, diff_output = self._run(
+                    ["cortex", "snapshot", "diff", str(source), "--json"]
+                )
+
+            verify_payload = json.loads(verify_output)
+            diff_payload = json.loads(diff_output)
+
+            self.assertEqual(verify_code, 0)
+            self.assertEqual(diff_code, 0)
+            self.assertEqual(verify_payload["status"], "warn")
+            self.assertEqual(diff_payload["status"], "warn")
+            self.assertEqual(verify_payload["changed_files_count"], 1)
+            self.assertEqual(diff_payload["changed_files_count"], 1)
 
     def test_cortex_inspect_reports_missing_path(self) -> None:
         missing = "/tmp/reflexive-public-missing-path"

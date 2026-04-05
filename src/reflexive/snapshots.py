@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import shutil
 import sqlite3
+from tempfile import TemporaryDirectory
 from typing import Any
 
 from reflexive.cortex import inspect_path
@@ -163,6 +164,194 @@ def _set_latest_pointer(path: Path, snapshot_id: str) -> dict[str, Any]:
     return payload
 
 
+def _snapshot_file_map(files_root: Path) -> dict[str, Path]:
+    return {
+        str(path.relative_to(files_root)): path
+        for path in sorted(files_root.rglob("*"))
+        if path.is_file()
+    }
+
+
+def _snapshot_symlink_map(manifest: dict[str, Any]) -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    for entry in manifest.get("symlink_entries", []):
+        relative_path = entry.get("path")
+        target = entry.get("target")
+        if isinstance(relative_path, str) and isinstance(target, str):
+            mapping[relative_path] = target
+    return mapping
+
+
+def _target_entry_map(
+    target_root: Path,
+) -> tuple[dict[str, Path], dict[str, str], list[dict[str, str]], int]:
+    file_mapping: dict[str, Path] = {}
+    symlink_mapping: dict[str, str] = {}
+    ignored: list[dict[str, str]] = []
+    ignored_count = 0
+    for path in sorted(target_root.rglob("*")):
+        relative_path = str(path.relative_to(target_root))
+        if path.is_symlink():
+            symlink_mapping[relative_path] = os.readlink(path)
+            continue
+        if path.is_dir():
+            continue
+        if not path.is_file():
+            ignored_count += 1
+            if len(ignored) < MAX_SAMPLE_COUNT:
+                ignored.append({"path": relative_path, "reason": "unsupported_file_type"})
+            continue
+        if _is_sqlite_sidecar(path):
+            ignored_count += 1
+            if len(ignored) < MAX_SAMPLE_COUNT:
+                ignored.append({"path": relative_path, "reason": "sqlite_sidecar_not_compared"})
+            continue
+        file_mapping[relative_path] = path
+    return file_mapping, symlink_mapping, ignored, ignored_count
+
+
+def _file_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _files_match(left: Path, right: Path) -> bool:
+    if left.stat().st_size != right.stat().st_size:
+        return False
+    return _file_digest(left) == _file_digest(right)
+
+
+def _materialize_current_comparison_path(
+    current_path: Path, scratch_root: Path, relative_path: str
+) -> Path:
+    if not _is_sqlite_main(current_path):
+        return current_path
+    comparable_path = scratch_root / relative_path
+    try:
+        _copy_sqlite_database(current_path, comparable_path)
+    except sqlite3.DatabaseError:
+        comparable_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(current_path, comparable_path)
+    return comparable_path
+
+
+def _load_snapshot_bundle(path: Path, snapshot_ref: str) -> tuple[dict[str, Any], Path, dict[str, Any] | None]:
+    if snapshot_ref == "latest":
+        pointer_path = _latest_pointer_path(path)
+        if not pointer_path.exists():
+            raise FileNotFoundError("latest_snapshot_unavailable")
+        latest_pointer = _read_json(pointer_path)
+        snapshot_id = latest_pointer["snapshot_id"]
+        pointer = latest_pointer
+    else:
+        snapshot_id = snapshot_ref
+        pointer = None
+
+    manifest_path = _snapshot_manifest_path(path, snapshot_id)
+    if not manifest_path.exists():
+        raise FileNotFoundError("snapshot_not_found")
+    manifest = _read_json(manifest_path)
+    files_root = manifest_path.parent / "files"
+    return manifest, files_root, pointer
+
+
+def _diff_snapshot_against_path(raw_path: str, snapshot_ref: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    target_root = _resolve_path(raw_path)
+    if not target_root.exists():
+        raise FileNotFoundError("missing_path")
+
+    manifest, files_root, pointer = _load_snapshot_bundle(target_root, snapshot_ref)
+    snapshot_files = _snapshot_file_map(files_root)
+    snapshot_symlinks = _snapshot_symlink_map(manifest)
+
+    actual_copied_files = len(snapshot_files)
+    actual_copied_bytes = sum(path.stat().st_size for path in snapshot_files.values())
+    manifest_integrity = {
+        "copied_files_match": actual_copied_files == manifest.get("copied_files", 0),
+        "copied_bytes_match": actual_copied_bytes == manifest.get("copied_bytes", 0),
+        "captured_symlinks_match": len(snapshot_symlinks) == manifest.get("captured_symlink_count", 0),
+        "expected_copied_files": manifest.get("copied_files", 0),
+        "actual_copied_files": actual_copied_files,
+        "expected_copied_bytes": manifest.get("copied_bytes", 0),
+        "actual_copied_bytes": actual_copied_bytes,
+        "expected_captured_symlinks": manifest.get("captured_symlink_count", 0),
+        "actual_captured_symlinks": len(snapshot_symlinks),
+    }
+
+    target_files, target_symlinks, ignored_current_samples, ignored_current_count = _target_entry_map(target_root)
+    changed_files: list[str] = []
+    missing_files: list[str] = []
+    verified_files = 0
+    changed_symlinks: list[str] = []
+    missing_symlinks: list[str] = []
+    verified_symlinks = 0
+
+    with TemporaryDirectory(prefix="reflexive-public-snapshot-compare-") as scratch_dir:
+        scratch_root = Path(scratch_dir)
+        for relative_path, snapshot_path in snapshot_files.items():
+            current_path = target_files.get(relative_path)
+            if current_path is None:
+                if relative_path in target_symlinks:
+                    changed_files.append(relative_path)
+                    continue
+                missing_files.append(relative_path)
+                continue
+            comparable_current_path = _materialize_current_comparison_path(
+                current_path, scratch_root, relative_path
+            )
+            if _files_match(snapshot_path, comparable_current_path):
+                verified_files += 1
+                continue
+            changed_files.append(relative_path)
+
+    for relative_path, snapshot_target in snapshot_symlinks.items():
+        current_target = target_symlinks.get(relative_path)
+        if current_target is None:
+            if relative_path in target_files:
+                changed_symlinks.append(relative_path)
+                continue
+            missing_symlinks.append(relative_path)
+            continue
+        if current_target == snapshot_target:
+            verified_symlinks += 1
+            continue
+        changed_symlinks.append(relative_path)
+
+    snapshot_entry_paths = set(snapshot_files).union(snapshot_symlinks)
+    extra_current_files = sorted(set(target_files).difference(snapshot_entry_paths))
+    extra_current_symlinks = sorted(set(target_symlinks).difference(snapshot_entry_paths))
+    comparison = {
+        "path": str(target_root),
+        "path_key": _path_key(target_root),
+        "snapshot_id": manifest["id"],
+        "snapshot_reference": snapshot_ref,
+        "snapshot_pointer": pointer,
+        "snapshot_path": str((files_root.parent)),
+        "manifest": manifest,
+        "manifest_integrity": manifest_integrity,
+        "verified_files": verified_files,
+        "verified_symlinks": verified_symlinks,
+        "changed_files_count": len(changed_files),
+        "changed_files_samples": changed_files[:MAX_SAMPLE_COUNT],
+        "missing_files_count": len(missing_files),
+        "missing_files_samples": missing_files[:MAX_SAMPLE_COUNT],
+        "changed_symlinks_count": len(changed_symlinks),
+        "changed_symlinks_samples": changed_symlinks[:MAX_SAMPLE_COUNT],
+        "missing_symlinks_count": len(missing_symlinks),
+        "missing_symlinks_samples": missing_symlinks[:MAX_SAMPLE_COUNT],
+        "extra_current_files_count": len(extra_current_files),
+        "extra_current_files_samples": extra_current_files[:MAX_SAMPLE_COUNT],
+        "extra_current_symlinks_count": len(extra_current_symlinks),
+        "extra_current_symlinks_samples": extra_current_symlinks[:MAX_SAMPLE_COUNT],
+        "ignored_current_count": ignored_current_count,
+        "ignored_current_samples": ignored_current_samples,
+    }
+    return comparison, manifest
+
+
 def create_snapshot(raw_path: str) -> dict[str, Any]:
     source_root = _resolve_path(raw_path)
     inspection = inspect_path(raw_path)
@@ -307,4 +496,78 @@ def latest_snapshot(raw_path: str) -> dict[str, Any]:
         "path_key": listing["path_key"],
         "latest_pointer": listing["latest_pointer"],
         "snapshot": listing["snapshots"][0],
+    }
+
+
+def verify_snapshot(raw_path: str, snapshot_ref: str = "latest") -> dict[str, Any]:
+    target_root = _resolve_path(raw_path)
+    try:
+        comparison, manifest = _diff_snapshot_against_path(raw_path, snapshot_ref)
+    except FileNotFoundError as exc:
+        return {
+            "error": str(exc),
+            "path": str(target_root),
+            "path_key": _path_key(target_root),
+        }
+
+    integrity = comparison["manifest_integrity"]
+    status = "ok"
+    if not integrity["copied_files_match"] or not integrity["copied_bytes_match"]:
+        status = "error"
+    elif (
+        not integrity["captured_symlinks_match"]
+        or comparison["changed_symlinks_count"]
+        or comparison["missing_symlinks_count"]
+        or comparison["extra_current_symlinks_count"]
+        or comparison["changed_files_count"]
+        or comparison["missing_files_count"]
+        or comparison["extra_current_files_count"]
+        or comparison["ignored_current_count"]
+        or manifest.get("skipped_count", 0)
+    ):
+        status = "warn"
+
+    return {
+        **comparison,
+        "status": status,
+        "verified_at": _isoformat_z(),
+        "warnings": manifest.get("warnings", []),
+        "skipped_count": manifest.get("skipped_count", 0),
+        "skipped_samples": manifest.get("skipped_samples", []),
+    }
+
+
+def diff_snapshot(raw_path: str, snapshot_ref: str = "latest") -> dict[str, Any]:
+    target_root = _resolve_path(raw_path)
+    try:
+        comparison, manifest = _diff_snapshot_against_path(raw_path, snapshot_ref)
+    except FileNotFoundError as exc:
+        return {
+            "error": str(exc),
+            "path": str(target_root),
+            "path_key": _path_key(target_root),
+        }
+
+    integrity = comparison["manifest_integrity"]
+    status = "ok"
+    if not integrity["copied_files_match"] or not integrity["copied_bytes_match"]:
+        status = "error"
+    elif (
+        not integrity["captured_symlinks_match"]
+        or comparison["changed_symlinks_count"]
+        or comparison["missing_symlinks_count"]
+        or comparison["extra_current_symlinks_count"]
+        or comparison["changed_files_count"]
+        or comparison["missing_files_count"]
+        or comparison["extra_current_files_count"]
+    ):
+        status = "warn"
+
+    return {
+        **comparison,
+        "status": status,
+        "diffed_at": _isoformat_z(),
+        "warnings": manifest.get("warnings", []),
+        "skipped_count": manifest.get("skipped_count", 0),
+        "skipped_samples": manifest.get("skipped_samples", []),
     }

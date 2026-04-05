@@ -42,6 +42,8 @@ reflexive cortex check ~/.codex --json
 reflexive cortex doctor ~/.codex --json
 reflexive cortex compare ~/.codex ~/backup-codex --json
 reflexive cortex snapshot create ~/.codex --json
+reflexive cortex snapshot verify ~/.codex --json
+reflexive cortex snapshot diff ~/.codex --json
 ```
 
 4. Inspect the app-owned storage roots:

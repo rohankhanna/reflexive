@@ -7,7 +7,7 @@ import sys
 from reflexive import __version__
 from reflexive.cortex import check_path, compare_paths, doctor_path, inspect_path
 from reflexive.paths import purge_app_paths, resolve_app_paths
-from reflexive.snapshots import create_snapshot, latest_snapshot, list_snapshots
+from reflexive.snapshots import create_snapshot, diff_snapshot, latest_snapshot, list_snapshots, verify_snapshot
 
 
 def _status_payload() -> dict[str, object]:
@@ -28,6 +28,8 @@ def _status_payload() -> dict[str, object]:
             "cortex snapshot create",
             "cortex snapshot list",
             "cortex snapshot latest",
+            "cortex snapshot verify",
+            "cortex snapshot diff",
         ],
         "documented_domains": ["cortex", "app-paths"],
         "notes": [
@@ -137,6 +139,22 @@ def _build_parser() -> argparse.ArgumentParser:
     cortex_snapshot_latest_parser.add_argument("path", help="Path whose latest snapshot should be shown.")
     cortex_snapshot_latest_parser.add_argument("--json", action="store_true", help="Emit JSON output.")
 
+    cortex_snapshot_verify_parser = cortex_snapshot_subparsers.add_parser(
+        "verify",
+        help="Verify a path against a stored snapshot.",
+    )
+    cortex_snapshot_verify_parser.add_argument("path", help="Path to verify.")
+    cortex_snapshot_verify_parser.add_argument("snapshot_ref", nargs="?", default="latest")
+    cortex_snapshot_verify_parser.add_argument("--json", action="store_true", help="Emit JSON output.")
+
+    cortex_snapshot_diff_parser = cortex_snapshot_subparsers.add_parser(
+        "diff",
+        help="Show differences between a path and a stored snapshot.",
+    )
+    cortex_snapshot_diff_parser.add_argument("path", help="Path to diff.")
+    cortex_snapshot_diff_parser.add_argument("snapshot_ref", nargs="?", default="latest")
+    cortex_snapshot_diff_parser.add_argument("--json", action="store_true", help="Emit JSON output.")
+
     return parser
 
 
@@ -223,6 +241,12 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
             if args.snapshot_command == "latest":
                 _emit(latest_snapshot(args.path), args.json)
+                return 0
+            if args.snapshot_command == "verify":
+                _emit(verify_snapshot(args.path, args.snapshot_ref), args.json)
+                return 0
+            if args.snapshot_command == "diff":
+                _emit(diff_snapshot(args.path, args.snapshot_ref), args.json)
                 return 0
         parser.parse_args(["cortex", "--help"])
         return 0

@@ -33,6 +33,7 @@ The current public release exposes:
 - explicit app-data purge
 - read-only `cortex` inspection, risk-check, recommendation, and comparison commands for explicit paths
 - app-owned machine-local snapshots for explicit paths
+- app-owned snapshot verification and diff for explicit paths
 
 ## Deferred operator domains
 
