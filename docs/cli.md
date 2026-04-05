@@ -22,6 +22,11 @@ The current public release exposes a small read-only CLI surface.
   SQLite holders and stale sidecar files.
 - `reflexive cortex check <path> --json`
   Emits the same check payload in machine-readable form.
+- `reflexive cortex doctor <path>`
+  Adds operator-facing recommendations on top of the same read-only inspection
+  and check data.
+- `reflexive cortex doctor <path> --json`
+  Emits the same recommendation payload in machine-readable form.
 
 ## Not yet public
 

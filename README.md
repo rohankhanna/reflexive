@@ -39,6 +39,7 @@ reflexive status --json
 ```bash
 reflexive cortex inspect ~/.codex --json
 reflexive cortex check ~/.codex --json
+reflexive cortex doctor ~/.codex --json
 ```
 
 4. Read the [architecture guide](docs/architecture.md).
@@ -60,6 +61,7 @@ The public branch currently includes:
 - release metadata via `reflexive status` and `reflexive version`
 - read-only filesystem inspection via `reflexive cortex inspect <path>`
 - read-only operator-risk checks via `reflexive cortex check <path>`
+- read-only operator recommendations via `reflexive cortex doctor <path>`
 
 State-changing workflows such as snapshots, doctor homes, scratch homes, and
 scaffold mutation are not part of the current public release.

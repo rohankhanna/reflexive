@@ -4,7 +4,7 @@ import argparse
 import json
 
 from reflexive import __version__
-from reflexive.cortex import check_path, inspect_path
+from reflexive.cortex import check_path, doctor_path, inspect_path
 
 
 def _status_payload() -> dict[str, object]:
@@ -13,7 +13,7 @@ def _status_payload() -> dict[str, object]:
         "version": __version__,
         "release_surface": "public-shell",
         "status": "early-public-release",
-        "available_commands": ["status", "version", "cortex inspect", "cortex check"],
+        "available_commands": ["status", "version", "cortex inspect", "cortex check", "cortex doctor"],
         "documented_domains": ["cortex"],
         "notes": [
             "This public release exposes read-only inspection commands for local tool-state directories.",
@@ -61,6 +61,13 @@ def _build_parser() -> argparse.ArgumentParser:
     cortex_check_parser.add_argument("path", help="Path to inspect.")
     cortex_check_parser.add_argument("--json", action="store_true", help="Emit JSON output.")
 
+    cortex_doctor_parser = cortex_subparsers.add_parser(
+        "doctor",
+        help="Add operator-facing recommendations for a tool-state directory.",
+    )
+    cortex_doctor_parser.add_argument("path", help="Path to inspect.")
+    cortex_doctor_parser.add_argument("--json", action="store_true", help="Emit JSON output.")
+
     return parser
 
 
@@ -99,6 +106,9 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.cortex_command == "check":
             _emit(check_path(args.path), args.json)
+            return 0
+        if args.cortex_command == "doctor":
+            _emit(doctor_path(args.path), args.json)
             return 0
         parser.parse_args(["cortex", "--help"])
         return 0

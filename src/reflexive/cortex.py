@@ -372,3 +372,36 @@ def check_path(raw_path: str) -> dict[str, Any]:
         "inspection": inspection,
         "recommendations": recommendations,
     }
+
+
+def doctor_path(raw_path: str) -> dict[str, Any]:
+    checked = check_path(raw_path)
+    inspection = checked["inspection"]
+    recommendations = list(checked["recommendations"])
+
+    if not inspection["exists"]:
+        recommendations.append("Create or point reflexive at an existing tool-state directory before diagnosing it.")
+    if inspection["sqlite_holder_count"]:
+        recommendations.append(
+            "Live SQLite holders are present. Fully stop the owning tool before copying, repairing, or migrating this state."
+        )
+    elif inspection["stale_sqlite_sidecar_count"]:
+        recommendations.append(
+            "SQLite sidecars remain without live holders. They appear stale and should not be treated as proof that the tool is still running."
+        )
+    if inspection["sqlite_main_count"]:
+        recommendations.append(
+            "If you need a manual backup or migration, prefer a quiesced copy taken after the owning tool is stopped."
+        )
+    if inspection["symlink_count"]:
+        recommendations.append("Preserve symlinks if you copy this directory for recovery or experimentation.")
+    if checked["status"] == "ok" and not recommendations:
+        recommendations.append("No obvious filesystem-level operator risks were detected for this path.")
+
+    return {
+        "path": checked["path"],
+        "status": checked["status"],
+        "checks": checked["checks"],
+        "inspection": inspection,
+        "recommendations": recommendations,
+    }
