@@ -25,5 +25,5 @@ families.
 
 ## Status
 
-This public branch is currently a docs-first shell. The standalone packaged
-release surface is still being promoted into public `main`.
+This release currently focuses on documenting the public command model and
+operator-facing workflow shape. Broader packaged release surfaces will follow.

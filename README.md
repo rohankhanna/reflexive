@@ -17,7 +17,7 @@ Early public release.
 
 ## Getting Started
 
-This public branch currently exposes a docs-first shell of the project.
+This release currently exposes a docs-first shell of the project.
 
 Start here:
 
@@ -38,7 +38,7 @@ The canonical verification command for the current public shell is:
 ```
 
 It validates the required public-facing files and checks for obvious
-private-surface leakage in the public branch.
+private-surface leakage in the public release surface.
 
 ## Architecture
 
