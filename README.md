@@ -17,16 +17,35 @@ Early public release.
 
 ## Getting Started
 
-This release currently exposes a docs-first shell of the project.
+This release currently exposes a minimal installable CLI shell plus public
+documentation.
 
 Start here:
 
-1. Read the [architecture guide](docs/architecture.md).
-2. Review the [CLI overview](docs/cli.md).
+1. Install the package:
+
+```bash
+python3 -m pip install -e .
+```
+
+2. Inspect the public release surface:
+
+```bash
+reflexive status --json
+```
+
+3. Read the [architecture guide](docs/architecture.md).
+4. Review the [CLI overview](docs/cli.md).
 
 ## Verification
 
-Standalone verification guidance is not yet part of this early public shell.
+This early public release supports a simple runtime sanity check:
+
+```bash
+python3 -m pip install -e .
+reflexive status --json
+reflexive version
+```
 
 ## Architecture
 

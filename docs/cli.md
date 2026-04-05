@@ -1,12 +1,27 @@
 # CLI Overview
 
-`reflexive` is organized around a small set of operator-safety command
+The current public release exposes a minimal CLI shell.
+
+## Available commands
+
+- `reflexive status`
+  Shows public release metadata for the installed shell.
+- `reflexive status --json`
+  Emits the same release metadata in machine-readable form.
+- `reflexive version`
+  Prints the public package version.
+- `reflexive version --json`
+  Emits version metadata in machine-readable form.
+
+## Intended command domains
+
+The broader project design centers on a small set of operator-safety command
 families.
 
 ## Command families
 
 - `reflexive status`
-  Reports repo and safety-surface status.
+  Reports release metadata in the current public shell.
 - `reflexive cortex ...`
   Covers inspection, snapshots, recovery workflows, and isolated runtime
   environments.
@@ -25,5 +40,6 @@ families.
 
 ## Status
 
-This release currently focuses on documenting the public command model and
-operator-facing workflow shape.
+This release currently ships only the minimal `status` and `version` commands.
+The remaining command families are documented here as the intended operator
+surface, not yet as a claim of full public availability.

@@ -1,27 +1,33 @@
 # Architecture
 
-`reflexive` is an operator-safety CLI. It separates direct tool-state work from
-the surrounding documentation and guardrail surface so risky recovery actions
-are explicit and inspectable.
+`reflexive` is an operator-safety CLI. Its public release currently consists of
+a small installable command-line shell plus documentation describing the broader
+operator-safety direction of the project.
 
-## Public model
+## Current public release
 
-The project currently centers on two command domains:
+The shipped public surface currently has three parts:
 
-- `cortex`: inspection, snapshots, recovery surfaces, and isolated runtime
-  environments
-- `scaffold`: documentation and guardrail-oriented repo surfaces that shape
-  safer operator workflows
+- an installable Python package
+- a minimal CLI entrypoint with `status` and `version`
+- public-facing docs that describe the intended operator-safety model
 
 ```mermaid
 flowchart TD
-    CLI[reflexive CLI] --> STATUS[Status and inspection]
-    CLI --> CORTEX[Cortex commands]
-    CLI --> SCAFFOLD[Scaffold commands]
-    CORTEX --> SNAPSHOTS[Snapshots and recovery state]
-    CORTEX --> ENV[Doctor and scratch environments]
-    SCAFFOLD --> DOCS[Docs and guardrail content]
+    PKG[Python package] --> CLI[reflexive CLI]
+    CLI --> STATUS[status and version]
+    PKG --> DOCS[Public docs]
+    DOCS --> DOMAINS[Intended operator domains]
 ```
+
+## Intended operator domains
+
+The broader design centers on two command domains:
+
+- `cortex`: inspection, snapshots, recovery surfaces, and isolated runtime
+  environments
+- `scaffold`: documentation and guardrail-oriented repository surfaces that
+  shape safer operator workflows
 
 ## Design intent
 
