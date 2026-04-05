@@ -43,8 +43,14 @@ reflexive cortex doctor ~/.codex --json
 reflexive cortex compare ~/.codex ~/backup-codex --json
 ```
 
-4. Read the [architecture guide](docs/architecture.md).
-5. Review the [CLI overview](docs/cli.md).
+4. Inspect the app-owned storage roots:
+
+```bash
+reflexive paths --json
+```
+
+5. Read the [architecture guide](docs/architecture.md).
+6. Review the [CLI overview](docs/cli.md).
 
 ## Verification
 
@@ -60,6 +66,8 @@ python3 -m unittest discover -s tests -v
 The public branch currently includes:
 
 - release metadata via `reflexive status` and `reflexive version`
+- app-owned storage root discovery via `reflexive paths`
+- explicit app-data cleanup via `reflexive purge`
 - read-only filesystem inspection via `reflexive cortex inspect <path>`
 - read-only operator-risk checks via `reflexive cortex check <path>`
 - read-only operator recommendations via `reflexive cortex doctor <path>`
@@ -67,6 +75,16 @@ The public branch currently includes:
 
 State-changing workflows such as snapshots, doctor homes, scratch homes, and
 scaffold mutation are not part of the current public release.
+
+## Uninstall cleanup
+
+Python package uninstall does not provide a reliable hook for deleting user data
+automatically. The supported cleanup sequence is:
+
+```bash
+reflexive purge --all --yes
+python3 -m pip uninstall reflexive
+```
 
 ## Architecture
 

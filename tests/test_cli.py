@@ -22,10 +22,49 @@ class ReflexiveCliTest(unittest.TestCase):
         payload = json.loads(output)
         self.assertEqual(exit_code, 0)
         self.assertEqual(payload["tool"], "reflexive")
+        self.assertIn("paths", payload["available_commands"])
+        self.assertIn("purge", payload["available_commands"])
         self.assertIn("cortex inspect", payload["available_commands"])
         self.assertIn("cortex check", payload["available_commands"])
         self.assertIn("cortex doctor", payload["available_commands"])
         self.assertIn("cortex compare", payload["available_commands"])
+
+    def test_paths_json_uses_xdg_environment(self) -> None:
+        env = {
+            "XDG_CONFIG_HOME": "/tmp/reflexive-test-config",
+            "XDG_STATE_HOME": "/tmp/reflexive-test-state",
+            "XDG_CACHE_HOME": "/tmp/reflexive-test-cache",
+            "XDG_RUNTIME_DIR": "/tmp/reflexive-test-runtime",
+        }
+        with patch.dict("os.environ", env, clear=False):
+            exit_code, output = self._run(["paths", "--json"])
+        payload = json.loads(output)
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(payload["paths"]["config"], "/tmp/reflexive-test-config/reflexive")
+        self.assertEqual(payload["paths"]["state"], "/tmp/reflexive-test-state/reflexive")
+        self.assertEqual(payload["paths"]["cache"], "/tmp/reflexive-test-cache/reflexive")
+        self.assertEqual(payload["paths"]["runtime"], "/tmp/reflexive-test-runtime/reflexive")
+
+    def test_purge_all_removes_roots(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            base = Path(temp_dir)
+            env = {
+                "XDG_CONFIG_HOME": str(base / "config"),
+                "XDG_STATE_HOME": str(base / "state"),
+                "XDG_CACHE_HOME": str(base / "cache"),
+                "XDG_RUNTIME_DIR": str(base / "runtime"),
+            }
+            for key in ("config", "state", "cache", "runtime"):
+                (base / key / "reflexive").mkdir(parents=True, exist_ok=True)
+
+            with patch.dict("os.environ", env, clear=False):
+                exit_code, output = self._run(["purge", "--all", "--yes", "--json"])
+
+            payload = json.loads(output)
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(payload["status"], "purged")
+            for action in payload["actions"]:
+                self.assertTrue(action["removed"])
 
     def test_cortex_inspect_reports_missing_path(self) -> None:
         missing = "/tmp/reflexive-public-missing-path"

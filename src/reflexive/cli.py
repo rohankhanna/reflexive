@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 
 from reflexive import __version__
 from reflexive.cortex import check_path, compare_paths, doctor_path, inspect_path
+from reflexive.paths import purge_app_paths, resolve_app_paths
 
 
 def _status_payload() -> dict[str, object]:
@@ -16,14 +18,17 @@ def _status_payload() -> dict[str, object]:
         "available_commands": [
             "status",
             "version",
+            "paths",
+            "purge",
             "cortex inspect",
             "cortex check",
             "cortex doctor",
             "cortex compare",
         ],
-        "documented_domains": ["cortex"],
+        "documented_domains": ["cortex", "app-paths"],
         "notes": [
             "This public release exposes read-only inspection commands for local tool-state directories.",
+            "Future mutable state is intended to live under app-owned config/state/cache/runtime roots rather than inside the repo checkout.",
             "State-changing recovery and staging workflows are not part of the current public release.",
         ],
     }
@@ -47,6 +52,24 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Show the public release version.",
     )
     version_parser.add_argument("--json", action="store_true", help="Emit JSON output.")
+
+    paths_parser = subparsers.add_parser(
+        "paths",
+        help="Show the app-owned config, state, cache, and runtime roots.",
+    )
+    paths_parser.add_argument("--json", action="store_true", help="Emit JSON output.")
+
+    purge_parser = subparsers.add_parser(
+        "purge",
+        help="Delete app-owned config, state, cache, and runtime roots.",
+    )
+    purge_parser.add_argument("--config", action="store_true", help="Select the config root.")
+    purge_parser.add_argument("--state", action="store_true", help="Select the state root.")
+    purge_parser.add_argument("--cache", action="store_true", help="Select the cache root.")
+    purge_parser.add_argument("--runtime", action="store_true", help="Select the runtime root.")
+    purge_parser.add_argument("--all", action="store_true", help="Select all roots.")
+    purge_parser.add_argument("--yes", action="store_true", help="Apply deletion instead of showing a dry run.")
+    purge_parser.add_argument("--json", action="store_true", help="Emit JSON output.")
 
     cortex_parser = subparsers.add_parser(
         "cortex",
@@ -113,6 +136,38 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(payload, indent=2))
         else:
             print(__version__)
+        return 0
+
+    if args.command == "paths":
+        payload = {
+            "tool": "reflexive",
+            "paths": resolve_app_paths(),
+            "automatic_uninstall_cleanup_supported": False,
+            "recommended_uninstall_sequence": [
+                "reflexive purge --all --yes",
+                "python3 -m pip uninstall reflexive",
+            ],
+        }
+        if args.json:
+            print(json.dumps(payload, indent=2))
+        else:
+            print(json.dumps(payload, indent=2))
+        return 0
+
+    if args.command == "purge":
+        payload = purge_app_paths(
+            config=args.config,
+            state=args.state,
+            cache=args.cache,
+            runtime=args.runtime,
+            all_roots=args.all,
+            apply=args.yes,
+        )
+        if not args.json and not args.yes:
+            sys.stderr.write(
+                "dry run only; rerun with --yes to remove the selected app-owned roots\n"
+            )
+        _emit(payload, args.json)
         return 0
 
     if args.command == "cortex":

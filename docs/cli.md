@@ -12,6 +12,16 @@ The current public release exposes a small read-only CLI surface.
   Prints the public package version.
 - `reflexive version --json`
   Emits version metadata in machine-readable form.
+- `reflexive paths`
+  Shows the app-owned config, state, cache, and runtime roots.
+- `reflexive paths --json`
+  Emits the same path mapping in machine-readable form.
+- `reflexive purge [--state --cache --runtime --config | --all]`
+  Shows which app-owned roots would be removed.
+- `reflexive purge [--state --cache --runtime --config | --all] --yes`
+  Deletes the selected app-owned roots.
+- `reflexive purge ... --json`
+  Emits the same purge plan or purge result in machine-readable form.
 - `reflexive cortex inspect <path>`
   Inspects a local tool-state directory and reports file, symlink, and SQLite
   runtime details without modifying anything.
@@ -46,3 +56,9 @@ not part of the current public release.
 - Human-readable output for operators.
 - `--json` on automation-facing surfaces.
 - Explicit commands for state-changing actions.
+
+## Uninstall note
+
+The public CLI can purge its own app-owned roots, but Python package uninstall
+does not run a reliable user-data cleanup hook. Use `reflexive purge --all
+--yes` before uninstalling the package.
