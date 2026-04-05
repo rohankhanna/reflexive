@@ -24,4 +24,4 @@ Security issues include, for example:
 - accidental exposure of operator state or recovery artifacts
 - unsafe snapshot or restore behavior
 - privilege, isolation, or data-leak problems in launch staging
-- publication of private-only support-system surfaces on public `main`
+- publication of private-only support-system surfaces in the public release surface

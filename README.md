@@ -23,22 +23,10 @@ Start here:
 
 1. Read the [architecture guide](docs/architecture.md).
 2. Review the [CLI overview](docs/cli.md).
-3. Run the public verification command:
-
-```bash
-./scripts/verify-public.sh
-```
 
 ## Verification
 
-The canonical verification command for the current public shell is:
-
-```bash
-./scripts/verify-public.sh
-```
-
-It validates the required public-facing files and checks for obvious
-private-surface leakage in the public release surface.
+Standalone verification guidance is not yet part of this early public shell.
 
 ## Architecture
 

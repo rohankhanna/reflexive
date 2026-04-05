@@ -26,4 +26,4 @@ families.
 ## Status
 
 This release currently focuses on documenting the public command model and
-operator-facing workflow shape. Broader packaged release surfaces will follow.
+operator-facing workflow shape.
