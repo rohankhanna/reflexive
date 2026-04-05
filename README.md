@@ -17,7 +17,7 @@ Early public release.
 
 ## Getting Started
 
-This release currently exposes a minimal installable CLI shell plus public
+This release currently exposes a small installable CLI plus public
 documentation.
 
 Start here:
@@ -34,18 +34,35 @@ python3 -m pip install -e .
 reflexive status --json
 ```
 
-3. Read the [architecture guide](docs/architecture.md).
-4. Review the [CLI overview](docs/cli.md).
+3. Inspect a local tool-state directory:
+
+```bash
+reflexive cortex inspect ~/.codex --json
+reflexive cortex check ~/.codex --json
+```
+
+4. Read the [architecture guide](docs/architecture.md).
+5. Review the [CLI overview](docs/cli.md).
 
 ## Verification
 
-This early public release supports a simple runtime sanity check:
+This early public release supports a lightweight install-and-test path:
 
 ```bash
 python3 -m pip install -e .
-reflexive status --json
-reflexive version
+python3 -m unittest discover -s tests -v
 ```
+
+## Current public surface
+
+The public branch currently includes:
+
+- release metadata via `reflexive status` and `reflexive version`
+- read-only filesystem inspection via `reflexive cortex inspect <path>`
+- read-only operator-risk checks via `reflexive cortex check <path>`
+
+State-changing workflows such as snapshots, doctor homes, scratch homes, and
+scaffold mutation are not part of the current public release.
 
 ## Architecture
 

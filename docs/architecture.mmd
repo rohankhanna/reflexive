@@ -1,7 +1,5 @@
 flowchart TD
-    CLI[reflexive CLI] --> STATUS[Status and inspection]
-    CLI --> CORTEX[Cortex commands]
-    CLI --> SCAFFOLD[Scaffold commands]
-    CORTEX --> SNAPSHOTS[Snapshots and recovery state]
-    CORTEX --> ENV[Doctor and scratch environments]
-    SCAFFOLD --> DOCS[Docs and guardrail content]
+    CLI[reflexive CLI] --> STATUS[Status and version]
+    CLI --> INSPECT[Read-only cortex inspect and check]
+    CLI --> DOCS[Public docs]
+    DOCS --> FUTURE[Deferred snapshot doctor scratch scaffold domains]

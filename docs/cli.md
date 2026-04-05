@@ -1,6 +1,6 @@
 # CLI Overview
 
-The current public release exposes a minimal CLI shell.
+The current public release exposes a small read-only CLI surface.
 
 ## Available commands
 
@@ -12,34 +12,28 @@ The current public release exposes a minimal CLI shell.
   Prints the public package version.
 - `reflexive version --json`
   Emits version metadata in machine-readable form.
+- `reflexive cortex inspect <path>`
+  Inspects a local tool-state directory and reports file, symlink, and SQLite
+  runtime details without modifying anything.
+- `reflexive cortex inspect <path> --json`
+  Emits the same inspection payload in machine-readable form.
+- `reflexive cortex check <path>`
+  Evaluates a local tool-state directory for operator-risk signals such as live
+  SQLite holders and stale sidecar files.
+- `reflexive cortex check <path> --json`
+  Emits the same check payload in machine-readable form.
 
-## Intended command domains
+## Not yet public
 
-The broader project design centers on a small set of operator-safety command
-families.
+The broader project design includes additional operator workflows, but they are
+not part of the current public release.
 
-## Command families
-
-- `reflexive status`
-  Reports release metadata in the current public shell.
-- `reflexive cortex ...`
-  Covers inspection, snapshots, recovery workflows, and isolated runtime
-  environments.
-- `reflexive doctor ...`
-  Uses a safer fallback environment for recovery-oriented work.
-- `reflexive scratch ...`
-  Uses a disposable environment for experimentation.
-- `reflexive scaffold ...`
-  Covers documentation and guardrail-oriented repository surfaces.
+- snapshot creation and restore workflows
+- doctor and scratch environment staging
+- scaffold and repository-guardrail mutation commands
 
 ## Output style
 
 - Human-readable output for operators.
 - `--json` on automation-facing surfaces.
 - Explicit commands for state-changing actions.
-
-## Status
-
-This release currently ships only the minimal `status` and `version` commands.
-The remaining command families are documented here as the intended operator
-surface, not yet as a claim of full public availability.
