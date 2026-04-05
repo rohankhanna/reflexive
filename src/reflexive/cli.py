@@ -7,6 +7,7 @@ import sys
 from reflexive import __version__
 from reflexive.cortex import check_path, compare_paths, doctor_path, inspect_path
 from reflexive.paths import purge_app_paths, resolve_app_paths
+from reflexive.snapshots import create_snapshot, latest_snapshot, list_snapshots
 
 
 def _status_payload() -> dict[str, object]:
@@ -24,10 +25,13 @@ def _status_payload() -> dict[str, object]:
             "cortex check",
             "cortex doctor",
             "cortex compare",
+            "cortex snapshot create",
+            "cortex snapshot list",
+            "cortex snapshot latest",
         ],
         "documented_domains": ["cortex", "app-paths"],
         "notes": [
-            "This public release exposes read-only inspection commands for local tool-state directories.",
+            "This public release exposes read-only inspection commands plus explicit app-owned snapshot management for local tool-state directories.",
             "Future mutable state is intended to live under app-owned config/state/cache/runtime roots rather than inside the repo checkout.",
             "State-changing recovery and staging workflows are not part of the current public release.",
         ],
@@ -106,6 +110,33 @@ def _build_parser() -> argparse.ArgumentParser:
     cortex_compare_parser.add_argument("right_path", help="Second path to inspect.")
     cortex_compare_parser.add_argument("--json", action="store_true", help="Emit JSON output.")
 
+    cortex_snapshot_parser = cortex_subparsers.add_parser(
+        "snapshot",
+        help="Store and inspect app-owned snapshots for explicit paths.",
+    )
+    cortex_snapshot_subparsers = cortex_snapshot_parser.add_subparsers(dest="snapshot_command")
+
+    cortex_snapshot_create_parser = cortex_snapshot_subparsers.add_parser(
+        "create",
+        help="Create an app-owned snapshot for a path.",
+    )
+    cortex_snapshot_create_parser.add_argument("path", help="Path to snapshot.")
+    cortex_snapshot_create_parser.add_argument("--json", action="store_true", help="Emit JSON output.")
+
+    cortex_snapshot_list_parser = cortex_snapshot_subparsers.add_parser(
+        "list",
+        help="List snapshots stored for a path.",
+    )
+    cortex_snapshot_list_parser.add_argument("path", help="Path whose snapshots should be listed.")
+    cortex_snapshot_list_parser.add_argument("--json", action="store_true", help="Emit JSON output.")
+
+    cortex_snapshot_latest_parser = cortex_snapshot_subparsers.add_parser(
+        "latest",
+        help="Show the latest snapshot stored for a path.",
+    )
+    cortex_snapshot_latest_parser.add_argument("path", help="Path whose latest snapshot should be shown.")
+    cortex_snapshot_latest_parser.add_argument("--json", action="store_true", help="Emit JSON output.")
+
     return parser
 
 
@@ -183,6 +214,16 @@ def main(argv: list[str] | None = None) -> int:
         if args.cortex_command == "compare":
             _emit(compare_paths(args.left_path, args.right_path), args.json)
             return 0
+        if args.cortex_command == "snapshot":
+            if args.snapshot_command == "create":
+                _emit(create_snapshot(args.path), args.json)
+                return 0
+            if args.snapshot_command == "list":
+                _emit(list_snapshots(args.path), args.json)
+                return 0
+            if args.snapshot_command == "latest":
+                _emit(latest_snapshot(args.path), args.json)
+                return 0
         parser.parse_args(["cortex", "--help"])
         return 0
 

@@ -41,14 +41,20 @@ The current public release exposes a small read-only CLI surface.
   Compares two local tool-state directories at the same read-only summary level.
 - `reflexive cortex compare <left> <right> --json`
   Emits the same comparison payload in machine-readable form.
+- `reflexive cortex snapshot create <path>`
+  Creates an app-owned machine-local snapshot for an explicit path.
+- `reflexive cortex snapshot list <path>`
+  Lists snapshots stored for an explicit path.
+- `reflexive cortex snapshot latest <path>`
+  Shows the latest snapshot stored for an explicit path.
 
 ## Not yet public
 
 The broader project design includes additional operator workflows, but they are
 not part of the current public release.
 
-- snapshot creation and restore workflows
 - doctor and scratch environment staging
+- restore workflows
 - scaffold and repository-guardrail mutation commands
 
 ## Output style

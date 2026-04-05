@@ -28,6 +28,9 @@ class ReflexiveCliTest(unittest.TestCase):
         self.assertIn("cortex check", payload["available_commands"])
         self.assertIn("cortex doctor", payload["available_commands"])
         self.assertIn("cortex compare", payload["available_commands"])
+        self.assertIn("cortex snapshot create", payload["available_commands"])
+        self.assertIn("cortex snapshot list", payload["available_commands"])
+        self.assertIn("cortex snapshot latest", payload["available_commands"])
 
     def test_paths_json_uses_xdg_environment(self) -> None:
         env = {
@@ -65,6 +68,29 @@ class ReflexiveCliTest(unittest.TestCase):
             self.assertEqual(payload["status"], "purged")
             for action in payload["actions"]:
                 self.assertTrue(action["removed"])
+
+    def test_snapshot_create_list_and_latest(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            base = Path(temp_dir)
+            source = base / "source"
+            source.mkdir()
+            (source / "state.sqlite").write_text("placeholder", encoding="utf-8")
+            env = {"XDG_STATE_HOME": str(base / "state")}
+
+            with patch.dict("os.environ", env, clear=False):
+                create_code, create_output = self._run(["cortex", "snapshot", "create", str(source), "--json"])
+                list_code, list_output = self._run(["cortex", "snapshot", "list", str(source), "--json"])
+                latest_code, latest_output = self._run(["cortex", "snapshot", "latest", str(source), "--json"])
+
+            create_payload = json.loads(create_output)
+            list_payload = json.loads(list_output)
+            latest_payload = json.loads(latest_output)
+
+            self.assertEqual(create_code, 0)
+            self.assertEqual(list_code, 0)
+            self.assertEqual(latest_code, 0)
+            self.assertEqual(list_payload["snapshot_count"], 1)
+            self.assertEqual(latest_payload["snapshot"]["id"], create_payload["snapshot"]["id"])
 
     def test_cortex_inspect_reports_missing_path(self) -> None:
         missing = "/tmp/reflexive-public-missing-path"

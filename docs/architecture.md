@@ -32,14 +32,15 @@ The current public release exposes:
 - app-owned config, state, cache, and runtime path discovery
 - explicit app-data purge
 - read-only `cortex` inspection, risk-check, recommendation, and comparison commands for explicit paths
+- app-owned machine-local snapshots for explicit paths
 
 ## Deferred operator domains
 
 The broader design still includes richer operator domains, but they are not yet
 part of public `main`:
 
-- state-changing `cortex` snapshot and recovery workflows
 - doctor and scratch environment staging
+- restore workflows
 - scaffold commands for documentation and guardrail-oriented repository surfaces
 
 ## App-state posture
