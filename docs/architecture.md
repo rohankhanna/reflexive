@@ -61,3 +61,7 @@ the CLI, not implicit during package uninstall.
 ## Diagram source
 
 The diagram source lives in [architecture.mmd](architecture.mmd).
+
+## Architecture decisions
+
+Version-controlled ADRs live under [docs/adr/](adr/README.md).
