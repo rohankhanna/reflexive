@@ -52,8 +52,9 @@ reflexive cortex snapshot diff ~/.codex --json
 reflexive paths --json
 ```
 
-5. Read the [architecture guide](docs/architecture.md).
-6. Review the [CLI overview](docs/cli.md).
+5. Read the [adoption guide](docs/adoption.md).
+6. Read the [architecture guide](docs/architecture.md).
+7. Review the [CLI overview](docs/cli.md).
 
 ## Verification
 
