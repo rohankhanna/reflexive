@@ -58,7 +58,14 @@ reflexive paths --json
 
 ## Verification
 
-This early public release supports a lightweight install-and-test path:
+This branch verifies with:
+
+```bash
+python3 -m compileall src tests
+PYTHONPATH=src python3 -m unittest discover -s tests -v
+```
+
+If you prefer to test the installed package path as well, you can still run:
 
 ```bash
 python3 -m pip install -e .

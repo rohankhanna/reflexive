@@ -1,26 +1,23 @@
-# You can override the included template(s) by including variable overrides
-# SAST customization: https://docs.gitlab.com/user/application_security/sast/#available-cicd-variables
-# Secret Detection customization: https://docs.gitlab.com/user/application_security/secret_detection/pipeline/configure/
-# Dependency Scanning customization: https://docs.gitlab.com/user/application_security/dependency_scanning/dependency_scanning_sbom/#customizing-analyzer-behavior
-# Container Scanning customization: https://docs.gitlab.com/user/application_security/container_scanning/#customizing-analyzer-behavior
-# Note that environment variables can be set in several places
-# See https://docs.gitlab.com/ci/variables/#cicd-variable-precedence
 stages:
-- test
-- secret-detection
-verify_public:
-  stage: test
-  image: alpine:3.20
-  before_script:
-  - apk add --no-cache bash grep
+- verify
+- security
+
+verify:
+  image: python:3.12
+  stage: verify
   script:
-  - ./scripts/verify-public.sh
+  - python3 -m compileall src tests
+  - PYTHONPATH=src python3 -m unittest discover -s tests -v
+
 sast:
-  stage: test
+  stage: security
+
 include:
 - template: Security/SAST.gitlab-ci.yml
 - template: Security/Secret-Detection.gitlab-ci.yml
+
 variables:
   SECRET_DETECTION_ENABLED: 'true'
+
 secret_detection:
-  stage: secret-detection
+  stage: security
