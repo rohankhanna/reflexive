@@ -60,7 +60,8 @@ the CLI, not implicit during package uninstall.
 
 ## Diagram source
 
-The diagram source lives in [architecture.mmd](architecture.mmd).
+The diagram source lives in [architecture.mmd](architecture.mmd), with a
+generated SVG at [architecture.svg](architecture.svg).
 
 ## Architecture decisions
 
