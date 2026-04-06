@@ -7,10 +7,16 @@ import sys
 from reflexive import __version__
 from reflexive.cortex import check_path, compare_paths, doctor_path, inspect_path
 from reflexive.paths import purge_app_paths, resolve_app_paths
-from reflexive.snapshots import create_snapshot, diff_snapshot, latest_snapshot, list_snapshots, verify_snapshot
+from reflexive.snapshots import (
+    create_snapshot,
+    diff_snapshot,
+    latest_snapshot,
+    list_snapshots,
+    verify_snapshot,
+)
 
 
-def _status_payload() -> dict[str, object]:
+def status_payload() -> dict[str, object]:
     return {
         "tool": "reflexive",
         "version": __version__,
@@ -40,12 +46,12 @@ def _status_payload() -> dict[str, object]:
     }
 
 
-def _build_parser() -> argparse.ArgumentParser:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="reflexive",
         description="Minimal public CLI shell for reflexive.",
     )
-    subparsers = parser.add_subparsers(dest="command")
+    subparsers = parser.add_subparsers(dest="command", required=True)
 
     status_parser = subparsers.add_parser(
         "status",
@@ -81,7 +87,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "cortex",
         help="Inspect local tool-state directories.",
     )
-    cortex_subparsers = cortex_parser.add_subparsers(dest="cortex_command")
+    cortex_subparsers = cortex_parser.add_subparsers(dest="cortex_command", required=True)
 
     cortex_inspect_parser = cortex_subparsers.add_parser(
         "inspect",
@@ -116,7 +122,9 @@ def _build_parser() -> argparse.ArgumentParser:
         "snapshot",
         help="Store and inspect app-owned snapshots for explicit paths.",
     )
-    cortex_snapshot_subparsers = cortex_snapshot_parser.add_subparsers(dest="snapshot_command")
+    cortex_snapshot_subparsers = cortex_snapshot_parser.add_subparsers(
+        dest="snapshot_command", required=True
+    )
 
     cortex_snapshot_create_parser = cortex_snapshot_subparsers.add_parser(
         "create",
@@ -158,37 +166,13 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _emit(payload: dict[str, object], as_json: bool) -> None:
-    if as_json:
-        print(json.dumps(payload, indent=2))
-        return
-    print(json.dumps(payload, indent=2))
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = _build_parser()
-    args = parser.parse_args(argv)
-
+def dispatch(args: argparse.Namespace) -> dict[str, object]:
     if args.command == "status":
-        payload = _status_payload()
-        if args.json:
-            print(json.dumps(payload, indent=2))
-        else:
-            print("reflexive 0.1.0")
-            print("public shell: early public release")
-            print("commands: status, version")
-        return 0
-
+        return status_payload()
     if args.command == "version":
-        payload = {"tool": "reflexive", "version": __version__}
-        if args.json:
-            print(json.dumps(payload, indent=2))
-        else:
-            print(__version__)
-        return 0
-
+        return {"tool": "reflexive", "version": __version__}
     if args.command == "paths":
-        payload = {
+        return {
             "tool": "reflexive",
             "paths": resolve_app_paths(),
             "automatic_uninstall_cleanup_supported": False,
@@ -197,14 +181,8 @@ def main(argv: list[str] | None = None) -> int:
                 "python3 -m pip uninstall reflexive",
             ],
         }
-        if args.json:
-            print(json.dumps(payload, indent=2))
-        else:
-            print(json.dumps(payload, indent=2))
-        return 0
-
     if args.command == "purge":
-        payload = purge_app_paths(
+        return purge_app_paths(
             config=args.config,
             state=args.state,
             cache=args.cache,
@@ -212,44 +190,52 @@ def main(argv: list[str] | None = None) -> int:
             all_roots=args.all,
             apply=args.yes,
         )
-        if not args.json and not args.yes:
-            sys.stderr.write(
-                "dry run only; rerun with --yes to remove the selected app-owned roots\n"
-            )
-        _emit(payload, args.json)
-        return 0
-
     if args.command == "cortex":
         if args.cortex_command == "inspect":
-            _emit(inspect_path(args.path), args.json)
-            return 0
+            return inspect_path(args.path)
         if args.cortex_command == "check":
-            _emit(check_path(args.path), args.json)
-            return 0
+            return check_path(args.path)
         if args.cortex_command == "doctor":
-            _emit(doctor_path(args.path), args.json)
-            return 0
+            return doctor_path(args.path)
         if args.cortex_command == "compare":
-            _emit(compare_paths(args.left_path, args.right_path), args.json)
-            return 0
+            return compare_paths(args.left_path, args.right_path)
         if args.cortex_command == "snapshot":
             if args.snapshot_command == "create":
-                _emit(create_snapshot(args.path), args.json)
-                return 0
+                return create_snapshot(args.path)
             if args.snapshot_command == "list":
-                _emit(list_snapshots(args.path), args.json)
-                return 0
+                return list_snapshots(args.path)
             if args.snapshot_command == "latest":
-                _emit(latest_snapshot(args.path), args.json)
-                return 0
+                return latest_snapshot(args.path)
             if args.snapshot_command == "verify":
-                _emit(verify_snapshot(args.path, args.snapshot_ref), args.json)
-                return 0
+                return verify_snapshot(args.path, args.snapshot_ref)
             if args.snapshot_command == "diff":
-                _emit(diff_snapshot(args.path, args.snapshot_ref), args.json)
-                return 0
-        parser.parse_args(["cortex", "--help"])
-        return 0
+                return diff_snapshot(args.path, args.snapshot_ref)
+    raise ValueError("unsupported command")
 
-    parser.print_help()
+
+def emit(payload: dict[str, object], as_json: bool, command: str, *, apply: bool = False) -> None:
+    if as_json:
+        json.dump(payload, sys.stdout, indent=2, sort_keys=True)
+        sys.stdout.write("\n")
+        return
+    if command == "status":
+        sys.stdout.write("reflexive 0.1.0\n")
+        sys.stdout.write("public shell: early public release\n")
+        sys.stdout.write("commands: status, version\n")
+        return
+    if command == "version":
+        sys.stdout.write(str(payload["version"]) + "\n")
+        return
+    if command == "purge" and not apply:
+        sys.stderr.write(
+            "dry run only; rerun with --yes to remove the selected app-owned roots\n"
+        )
+    sys.stdout.write(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    payload = dispatch(args)
+    emit(payload, getattr(args, "json", False), args.command, apply=getattr(args, "yes", False))
     return 0
